@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +6,7 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import Colors from '../constants/colors';
 import Theme from '../constants/theme';
 import { useAuth } from '../context/AuthContext';
@@ -15,7 +15,7 @@ import { useAuth } from '../context/AuthContext';
 const MenuItem = ({ icon, label, sublabel, onPress, danger, rightBadge }) => (
   <TouchableOpacity style={styles.menuItem} activeOpacity={0.7} onPress={onPress}>
     <View style={[styles.menuIconWrap, danger && styles.menuIconWrapDanger]}>
-      <Text style={styles.menuIcon}>{icon}</Text>
+      {icon}
     </View>
     <View style={styles.menuText}>
       <Text style={[styles.menuLabel, danger && styles.menuLabelDanger]}>{label}</Text>
@@ -27,7 +27,7 @@ const MenuItem = ({ icon, label, sublabel, onPress, danger, rightBadge }) => (
       </View>
     )}
     {!rightBadge && !danger && (
-      <Text style={styles.menuArrow}>›</Text>
+      <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
     )}
   </TouchableOpacity>
 );
@@ -98,7 +98,7 @@ const ProfileScreen = ({ onNavigate, onOpenAddresses }) => {
       {/* ── Orders & Shopping ── */}
       <Section title="Orders & Shopping">
         <MenuItem
-          icon="📦"
+          icon={<Ionicons name="cube-outline" size={20} color={Colors.textSecondary} />}
           label="My Orders"
           sublabel="Track, return or buy again"
           onPress={() => {}}
@@ -106,14 +106,14 @@ const ProfileScreen = ({ onNavigate, onOpenAddresses }) => {
         />
         <View style={styles.divider} />
         <MenuItem
-          icon="🤍"
+          icon={<Ionicons name="heart-outline" size={20} color={Colors.textSecondary} />}
           label="Wishlist"
           sublabel="Items you've saved"
           onPress={() => {}}
         />
         <View style={styles.divider} />
         <MenuItem
-          icon="🔄"
+          icon={<Ionicons name="refresh-outline" size={20} color={Colors.textSecondary} />}
           label="Returns & Refunds"
           sublabel="Manage your returns"
           onPress={() => {}}
@@ -123,21 +123,21 @@ const ProfileScreen = ({ onNavigate, onOpenAddresses }) => {
       {/* ── Account ── */}
       <Section title="Account">
         <MenuItem
-          icon="📍"
+          icon={<Ionicons name="location-outline" size={20} color={Colors.textSecondary} />}
           label="Addresses"
           sublabel="Manage delivery addresses"
           onPress={onOpenAddresses}
         />
         <View style={styles.divider} />
         <MenuItem
-          icon="💳"
+          icon={<Ionicons name="card-outline" size={20} color={Colors.textSecondary} />}
           label="Payment Methods"
           sublabel="Cards & UPI"
           onPress={() => {}}
         />
         <View style={styles.divider} />
         <MenuItem
-          icon="🔔"
+          icon={<Ionicons name="notifications-outline" size={20} color={Colors.textSecondary} />}
           label="Notifications"
           sublabel="Deals, order updates & more"
           onPress={() => {}}
@@ -147,14 +147,14 @@ const ProfileScreen = ({ onNavigate, onOpenAddresses }) => {
       {/* ── Preferences ── */}
       <Section title="Preferences">
         <MenuItem
-          icon="✨"
+          icon={<Ionicons name="shirt-outline" size={20} color={Colors.textSecondary} />}
           label="Virtual Try-On History"
           sublabel="Outfits you've tried on"
           onPress={() => {}}
         />
         <View style={styles.divider} />
         <MenuItem
-          icon="👗"
+          icon={<Ionicons name="color-palette-outline" size={20} color={Colors.textSecondary} />}
           label="My Style Profile"
           sublabel="Size & style preferences"
           onPress={() => {}}
@@ -164,19 +164,19 @@ const ProfileScreen = ({ onNavigate, onOpenAddresses }) => {
       {/* ── Support ── */}
       <Section title="Support">
         <MenuItem
-          icon="💬"
+          icon={<Ionicons name="chatbubble-outline" size={20} color={Colors.textSecondary} />}
           label="Help & Support"
           onPress={() => {}}
         />
         <View style={styles.divider} />
         <MenuItem
-          icon="⭐"
+          icon={<Ionicons name="star-outline" size={20} color={Colors.textSecondary} />}
           label="Rate the App"
           onPress={() => {}}
         />
         <View style={styles.divider} />
         <MenuItem
-          icon="📄"
+          icon={<Ionicons name="document-text-outline" size={20} color={Colors.textSecondary} />}
           label="Privacy Policy"
           onPress={() => {}}
         />
@@ -186,7 +186,7 @@ const ProfileScreen = ({ onNavigate, onOpenAddresses }) => {
       {user && (
         <Section>
           <MenuItem
-            icon="🚪"
+            icon={<Ionicons name="log-out-outline" size={20} color={Colors.accent} />}
             label="Sign Out"
             onPress={handleSignOut}
             danger
@@ -306,9 +306,6 @@ const styles = StyleSheet.create({
   menuIconWrapDanger: {
     backgroundColor: Colors.saleBg,
   },
-  menuIcon: {
-    fontSize: 18,
-  },
   menuText: {
     flex: 1,
   },
@@ -325,12 +322,6 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     marginTop: 1,
   },
-  menuArrow: {
-    fontSize: 22,
-    color: Colors.textMuted,
-    fontWeight: '300',
-  },
-
   // Badge
   badge: {
     backgroundColor: Colors.accent,

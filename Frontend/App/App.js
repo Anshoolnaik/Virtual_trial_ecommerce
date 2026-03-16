@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AuthProvider } from './src/context/AuthContext';
+import { CartProvider } from './src/context/CartContext';
 import LoginScreen from './src/screens/LoginScreen';
 import SignupScreen from './src/screens/SignupScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -15,7 +16,9 @@ const Navigator = () => {
 export default function App() {
   return (
     <AuthProvider>
-      <Navigator />
+      <CartProvider>
+        <Navigator />
+      </CartProvider>
     </AuthProvider>
   );
 }

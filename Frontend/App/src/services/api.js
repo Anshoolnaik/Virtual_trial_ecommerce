@@ -46,6 +46,23 @@ export const authAPI = {
 
 const authHeader = (token) => ({ Authorization: `Bearer ${token}` });
 
+export const productAPI = {
+  newArrivals: (limit = 8) =>
+    request(`/products/new-arrivals?limit=${limit}`),
+
+  trending: (limit = 8) =>
+    request(`/products/trending?limit=${limit}`),
+
+  list: ({ category, search, limit = 20, offset = 0 } = {}) => {
+    const params = new URLSearchParams({ limit, offset });
+    if (category && category !== 'All') params.append('category', category);
+    if (search) params.append('search', search);
+    return request(`/products?${params}`);
+  },
+
+  get: (id) => request(`/products/${id}`),
+};
+
 export const addressAPI = {
   getAll: (token) =>
     request('/addresses', { headers: authHeader(token) }),

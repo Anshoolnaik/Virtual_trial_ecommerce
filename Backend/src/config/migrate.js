@@ -66,6 +66,93 @@ const migrate = async () => {
         FOR EACH ROW EXECUTE FUNCTION set_updated_at();
     `);
 
+    // ── Sellers ──────────────────────────────────────────────────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS sellers (
+        id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        full_name     VARCHAR(255)  NOT NULL,
+        store_name    VARCHAR(255)  NOT NULL,
+        email         VARCHAR(255)  UNIQUE NOT NULL,
+        password_hash VARCHAR(255)  NOT NULL,
+        is_verified   BOOLEAN       DEFAULT FALSE,
+        created_at    TIMESTAMPTZ   DEFAULT NOW(),
+        updated_at    TIMESTAMPTZ   DEFAULT NOW()
+      );
+    `);
+
+    await client.query(`
+      DROP TRIGGER IF EXISTS sellers_updated_at ON sellers;
+      CREATE TRIGGER sellers_updated_at
+        BEFORE UPDATE ON sellers
+        FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+    `);
+
+    // ── Products ─────────────────────────────────────────────────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS products (
+        id             UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
+        seller_id      UUID         NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+        name           VARCHAR(255) NOT NULL,
+        brand          VARCHAR(255) NOT NULL,
+        description    TEXT,
+        price          DECIMAL(10,2) NOT NULL,
+        original_price DECIMAL(10,2),
+        category       VARCHAR(100) NOT NULL,
+        badge          VARCHAR(50),
+        try_on         BOOLEAN      DEFAULT FALSE,
+        sizes          JSONB        NOT NULL DEFAULT '[]',
+        colors         JSONB        NOT NULL DEFAULT '[]',
+        stock          INTEGER      NOT NULL DEFAULT 0,
+        material       VARCHAR(255),
+        fit            VARCHAR(255),
+        care           VARCHAR(255),
+        origin         VARCHAR(255),
+        rating         DECIMAL(3,2) DEFAULT 0,
+        review_count   INTEGER      DEFAULT 0,
+        is_active      BOOLEAN      DEFAULT TRUE,
+        created_at     TIMESTAMPTZ  DEFAULT NOW(),
+        updated_at     TIMESTAMPTZ  DEFAULT NOW()
+      );
+    `);
+
+    await client.query(`
+      DROP TRIGGER IF EXISTS products_updated_at ON products;
+      CREATE TRIGGER products_updated_at
+        BEFORE UPDATE ON products
+        FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+    `);
+
+    // Add product detail columns if they don't exist (safe for existing tables)
+    for (const col of ['material', 'fit', 'care', 'origin']) {
+      await client.query(`
+        ALTER TABLE products ADD COLUMN IF NOT EXISTS ${col} VARCHAR(255);
+      `);
+    }
+
+    // ── Product Images ────────────────────────────────────────────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS product_images (
+        id          UUID    PRIMARY KEY DEFAULT uuid_generate_v4(),
+        product_id  UUID    NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+        url         TEXT    NOT NULL,
+        public_id   TEXT    NOT NULL,
+        color       VARCHAR(20),
+        is_primary  BOOLEAN DEFAULT FALSE,
+        sort_order  INTEGER DEFAULT 0,
+        created_at  TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    await client.query(`
+      ALTER TABLE product_images ADD COLUMN IF NOT EXISTS color VARCHAR(20);
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_products_seller  ON products(seller_id);
+      CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
+      CREATE INDEX IF NOT EXISTS idx_product_images_product ON product_images(product_id);
+    `);
+
     console.log('✅ Migrations completed successfully.');
   } catch (err) {
     console.error('❌ Migration failed:', err.message);

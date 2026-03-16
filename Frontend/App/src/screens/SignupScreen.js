@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import {
   View,
   Text,
@@ -130,6 +131,11 @@ const SignupScreen = ({ onNavigate }) => {
           <View style={[styles.circle, styles.c2]} />
           <View style={[styles.circle, styles.c3]} />
 
+          {/* Back Button */}
+          <TouchableOpacity style={styles.backBtn} onPress={() => onNavigate('home')} activeOpacity={0.7}>
+            <Ionicons name="arrow-back" size={22} color={Colors.white} />
+          </TouchableOpacity>
+
           <View style={styles.brand}>
             <View style={styles.logoBox}>
               <Text style={styles.logoLetter}>V</Text>
@@ -154,7 +160,7 @@ const SignupScreen = ({ onNavigate }) => {
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Full Name</Text>
             <View style={[styles.inputWrap, focusedField === 'fullName' && styles.inputFocused]}>
-              <Text style={styles.inputIcon}>👤</Text>
+              <Ionicons name="person-outline" size={18} color={Colors.textMuted} style={styles.inputIcon} />
               <TextInput
                 {...inputProps('fullName', null, emailRef, {
                   placeholder: 'Alex Johnson',
@@ -169,7 +175,7 @@ const SignupScreen = ({ onNavigate }) => {
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Email Address</Text>
             <View style={[styles.inputWrap, focusedField === 'email' && styles.inputFocused]}>
-              <Text style={styles.inputIcon}>✉</Text>
+              <Ionicons name="mail-outline" size={18} color={Colors.textMuted} style={styles.inputIcon} />
               <TextInput
                 {...inputProps('email', emailRef, passwordRef, {
                   placeholder: 'you@example.com',
@@ -185,7 +191,7 @@ const SignupScreen = ({ onNavigate }) => {
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Password</Text>
             <View style={[styles.inputWrap, focusedField === 'password' && styles.inputFocused]}>
-              <Text style={styles.inputIcon}>🔒</Text>
+              <Ionicons name="lock-closed-outline" size={18} color={Colors.textMuted} style={styles.inputIcon} />
               <TextInput
                 {...inputProps('password', passwordRef, confirmRef, {
                   placeholder: 'Min. 6 characters',
@@ -193,7 +199,7 @@ const SignupScreen = ({ onNavigate }) => {
                 })}
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
-                <Text style={styles.eyeIcon}>{showPassword ? '🙈' : '👁'}</Text>
+                <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={18} color={Colors.textMuted} />
               </TouchableOpacity>
             </View>
             <StrengthBar password={form.password} />
@@ -204,7 +210,7 @@ const SignupScreen = ({ onNavigate }) => {
             <Text style={styles.label}>Confirm Password</Text>
             <View style={[styles.inputWrap, focusedField === 'confirm' && styles.inputFocused,
               form.confirm && form.password !== form.confirm && styles.inputError]}>
-              <Text style={styles.inputIcon}>🔏</Text>
+              <Ionicons name="lock-closed-outline" size={18} color={Colors.textMuted} style={styles.inputIcon} />
               <TextInput
                 {...inputProps('confirm', confirmRef, null, {
                   placeholder: 'Re-enter your password',
@@ -212,7 +218,7 @@ const SignupScreen = ({ onNavigate }) => {
                 })}
               />
               <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)} style={styles.eyeBtn}>
-                <Text style={styles.eyeIcon}>{showConfirm ? '🙈' : '👁'}</Text>
+                <Ionicons name={showConfirm ? 'eye-off-outline' : 'eye-outline'} size={18} color={Colors.textMuted} />
               </TouchableOpacity>
             </View>
             {form.confirm && form.password !== form.confirm && (
@@ -269,6 +275,19 @@ const HERO_HEIGHT = SCREEN_HEIGHT * 0.35;
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: Colors.primary },
   scrollContent: { flexGrow: 1 },
+
+  backBtn: {
+    position: 'absolute',
+    top: Platform.OS === 'android' ? StatusBar.currentHeight + 12 : 52,
+    left: Theme.spacing.xl,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
 
   hero: {
     height: HERO_HEIGHT,
@@ -332,10 +351,9 @@ const styles = StyleSheet.create({
   },
   inputFocused: { borderColor: Colors.accent },
   inputError: { borderColor: '#EF4444' },
-  inputIcon: { fontSize: 16, marginRight: Theme.spacing.sm, opacity: 0.5 },
+  inputIcon: { marginRight: Theme.spacing.sm },
   input: { flex: 1, fontSize: Theme.fontSize.md, color: Colors.textPrimary },
   eyeBtn: { padding: 4 },
-  eyeIcon: { fontSize: 18 },
   matchError: { fontSize: Theme.fontSize.xs, color: '#EF4444', fontWeight: '500', marginTop: 4, marginLeft: 2 },
 
   termsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Theme.spacing.sm, marginBottom: Theme.spacing.lg },

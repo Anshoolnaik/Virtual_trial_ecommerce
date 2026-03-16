@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import {
   View,
   Text,
@@ -143,7 +144,12 @@ const AddressFormScreen = ({ existingAddress, onBack, onSaved }) => {
                     styles.quickLabelText,
                     !useCustomLabel && form.label === ql && styles.quickLabelTextActive,
                   ]}>
-                    {ql === 'Home' ? '🏠 ' : ql === 'Work' ? '💼 ' : '📍 '}{ql}
+                    <Ionicons
+                      name={ql === 'Home' ? 'home-outline' : ql === 'Work' ? 'briefcase-outline' : 'location-outline'}
+                      size={13}
+                      color={form.label === ql && !useCustomLabel ? Colors.white : Colors.textSecondary}
+                    />
+                    {' '}{ql}
                   </Text>
                 </TouchableOpacity>
               ))}

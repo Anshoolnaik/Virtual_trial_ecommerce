@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   StatusBar,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 
 import Header from '../components/common/Header';
@@ -22,14 +23,58 @@ import ProfileScreen from './ProfileScreen';
 import AddressesScreen from './AddressesScreen';
 import AddressFormScreen from './AddressFormScreen';
 import ProductDetailScreen from './ProductDetailScreen';
+import CartScreen from './CartScreen';
 
 import Colors from '../constants/colors';
 import Theme from '../constants/theme';
-import { banners, categories, newArrivals, trending, flashSaleProducts } from '../data/mockData';
+import { banners, categories, flashSaleProducts } from '../data/mockData';
+import { productAPI } from '../services/api';
 
 const HomeScreen = ({ onNavigate }) => {
   const [activeTab, setActiveTab] = useState('home');
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+
+  // API data
+  const [newArrivals, setNewArrivals] = useState([]);
+  const [trending, setTrending]       = useState([]);
+  const [apiLoading, setApiLoading]   = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [naRes, trRes] = await Promise.all([
+          productAPI.newArrivals(8),
+          productAPI.trending(8),
+        ]);
+        setNewArrivals(naRes.data.products);
+        setTrending(trRes.data.products);
+      } catch {
+        // silently fall back to empty lists; banners/categories are still static
+      } finally {
+        setApiLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const q = query.toLowerCase();
+    const all = [...newArrivals, ...trending];
+    setSearchResults(
+      all.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.brand.toLowerCase().includes(q)
+      )
+    );
+  };
   // Sub-screen stack for profile section: null | 'addresses' | 'address-form'
   const [subScreen, setSubScreen] = useState(null);
   const [editingAddress, setEditingAddress] = useState(null); // address being edited
@@ -60,10 +105,14 @@ const HomeScreen = ({ onNavigate }) => {
       <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
 
       {/* Fixed Header */}
-      <Header cartCount={2} notificationCount={3} onNavigate={onNavigate} />
+      {activeTab !== 'cart' && (
+        <Header notificationCount={3} onNavigate={onNavigate} onCartPress={() => handleTabPress('cart')} />
+      )}
 
       {/* Scrollable Content */}
-      {activeTab === 'profile' && subScreen === 'addresses' ? (
+      {activeTab === 'cart' ? (
+        <CartScreen onBack={() => handleTabPress('home')} />
+      ) : activeTab === 'profile' && subScreen === 'addresses' ? (
         <AddressesScreen
           onBack={closeSubScreen}
           onAddNew={() => openAddressForm(null)}
@@ -84,54 +133,88 @@ const HomeScreen = ({ onNavigate }) => {
           bounces
         >
           {/* Search */}
-          <SearchBar />
+          <SearchBar onSearch={handleSearch} />
 
-          {/* Greeting */}
-          <View style={styles.greeting}>
-            <Text style={styles.greetingText}>Good morning, Alex 👋</Text>
-            <Text style={styles.greetingSubtext}>What are you looking for today?</Text>
-          </View>
+          {/* Search Results */}
+          {searchQuery.trim().length > 0 ? (
+            <View style={styles.searchResults}>
+              <Text style={styles.searchResultsTitle}>
+                {searchResults.length > 0
+                  ? `${searchResults.length} result${searchResults.length !== 1 ? 's' : ''} for "${searchQuery}"`
+                  : `No results for "${searchQuery}"`}
+              </Text>
+              {searchResults.length > 0 ? (
+                <ProductGrid products={searchResults} onProductPress={setSelectedProduct} />
+              ) : (
+                <View style={styles.noResults}>
+                  <Text style={styles.noResultsIcon}>🔍</Text>
+                  <Text style={styles.noResultsText}>Try a different keyword</Text>
+                </View>
+              )}
+            </View>
+          ) : (
+          <></>
+          )}
 
-          {/* Hero Banners */}
-          <HeroBanner banners={banners} />
+          {/* Home Content — hidden while searching */}
+          {searchQuery.trim().length === 0 && (
+            <>
+              {/* Greeting */}
+              <View style={styles.greeting}>
+                <Text style={styles.greetingText}>Good morning, Alex 👋</Text>
+                <Text style={styles.greetingSubtext}>What are you looking for today?</Text>
+              </View>
 
-          {/* Categories */}
-          <CategoryPills categories={categories} />
+              {/* Hero Banners */}
+              <HeroBanner banners={banners} />
 
-          {/* New Arrivals — 2-column grid */}
-          <SectionHeader
-            title="New Arrivals"
-            subtitle="Fresh styles just landed"
-            onSeeAll={() => {}}
-          />
-          <ProductGrid products={newArrivals} onProductPress={setSelectedProduct} />
+              {/* Categories */}
+              <CategoryPills categories={categories} />
 
-          {/* Flash Sale */}
-          <SectionHeader
-            title="Flash Sale"
-            subtitle="Up to 60% off select items"
-          />
-          <FlashSaleBanner products={flashSaleProducts} />
+              {/* New Arrivals — 2-column grid */}
+              <SectionHeader
+                title="New Arrivals"
+                subtitle="Fresh styles just landed"
+                onSeeAll={() => {}}
+              />
+              {apiLoading ? (
+                <ActivityIndicator style={styles.loader} color={Colors.primary} />
+              ) : newArrivals.length > 0 ? (
+                <ProductGrid products={newArrivals} onProductPress={setSelectedProduct} />
+              ) : null}
 
-          {/* Trending — horizontal scroll */}
-          <SectionHeader
-            title="Trending Now"
-            subtitle="What everyone is wearing"
-            onSeeAll={() => {}}
-          />
-          <FlatList
-            data={trending}
-            renderItem={({ item }) => (
-              <ProductCard product={item} style={styles.trendingCard} onPress={() => setSelectedProduct(item)} />
-            )}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.trendingList}
-          />
+              {/* Flash Sale */}
+              <SectionHeader
+                title="Flash Sale"
+                subtitle="Up to 60% off select items"
+              />
+              <FlashSaleBanner products={flashSaleProducts} />
 
-          {/* Virtual Try-On CTA */}
-          <TryOnCTA />
+              {/* Trending — horizontal scroll */}
+              <SectionHeader
+                title="Trending Now"
+                subtitle="What everyone is wearing"
+                onSeeAll={() => {}}
+              />
+              {apiLoading ? (
+                <ActivityIndicator style={styles.loader} color={Colors.primary} />
+              ) : (
+                <FlatList
+                  data={trending}
+                  renderItem={({ item }) => (
+                    <ProductCard product={item} style={styles.trendingCard} onPress={() => setSelectedProduct(item)} />
+                  )}
+                  keyExtractor={(item) => item.id}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.trendingList}
+                />
+              )}
+
+              {/* Virtual Try-On CTA */}
+              <TryOnCTA />
+            </>
+          )}
 
           {/* Bottom padding for tab bar */}
           <View style={styles.bottomPad} />
@@ -139,7 +222,9 @@ const HomeScreen = ({ onNavigate }) => {
       )}
 
       {/* Fixed Bottom Tab Bar */}
-      <BottomTabBar activeTab={activeTab} onTabPress={handleTabPress} />
+      {activeTab !== 'cart' && (
+        <BottomTabBar activeTab={activeTab} onTabPress={handleTabPress} />
+      )}
     </SafeAreaView>
   );
 };
@@ -190,6 +275,9 @@ const TryOnCTA = () => (
 );
 
 const styles = StyleSheet.create({
+  loader: {
+    marginVertical: Theme.spacing.xl,
+  },
   safeArea: {
     flex: 1,
     backgroundColor: Colors.white,
@@ -216,6 +304,31 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 2,
     fontWeight: '400',
+  },
+
+  // Search Results
+  searchResults: {
+    paddingTop: Theme.spacing.md,
+    paddingBottom: Theme.spacing.lg,
+  },
+  searchResultsTitle: {
+    fontSize: Theme.fontSize.sm,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+    paddingHorizontal: Theme.spacing.lg,
+    marginBottom: Theme.spacing.md,
+  },
+  noResults: {
+    alignItems: 'center',
+    paddingVertical: Theme.spacing['3xl'],
+    gap: Theme.spacing.sm,
+  },
+  noResultsIcon: {
+    fontSize: 48,
+  },
+  noResultsText: {
+    fontSize: Theme.fontSize.md,
+    color: Colors.textMuted,
   },
 
   // Product Grid

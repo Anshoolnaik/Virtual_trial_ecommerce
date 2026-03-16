@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import {
   View,
   Text,
@@ -22,7 +23,7 @@ const AddressCard = ({ address, onEdit, onDelete, onSetDefault }) => {
       {/* Top row: label + default badge */}
       <View style={styles.cardHeader}>
         <View style={styles.labelRow}>
-          <Text style={styles.labelIcon}>{labelIcon(label)}</Text>
+          {labelIcon(label)}
           <Text style={styles.labelText}>{label}</Text>
         </View>
         {is_default ? (
@@ -42,7 +43,10 @@ const AddressCard = ({ address, onEdit, onDelete, onSetDefault }) => {
       {address_line2 ? <Text style={styles.line}>{address_line2}</Text> : null}
       <Text style={styles.line}>{city}, {state} – {pincode}</Text>
       <Text style={styles.line}>{country}</Text>
-      <Text style={styles.phone}>📞 {phone}</Text>
+      <View style={styles.phoneRow}>
+        <Ionicons name="call-outline" size={13} color={Colors.textMuted} />
+        <Text style={styles.phone}>{phone}</Text>
+      </View>
 
       {/* Actions */}
       <View style={styles.cardActions}>
@@ -60,9 +64,9 @@ const AddressCard = ({ address, onEdit, onDelete, onSetDefault }) => {
 
 const labelIcon = (label = '') => {
   const l = label.toLowerCase();
-  if (l.includes('home')) return '🏠';
-  if (l.includes('work') || l.includes('office')) return '💼';
-  return '📍';
+  if (l.includes('home')) return <Ionicons name="home-outline" size={16} color={Colors.textSecondary} />;
+  if (l.includes('work') || l.includes('office')) return <Ionicons name="briefcase-outline" size={16} color={Colors.textSecondary} />;
+  return <Ionicons name="location-outline" size={16} color={Colors.textSecondary} />;
 };
 
 // ─── AddressesScreen ──────────────────────────────────────────────────────────
@@ -124,7 +128,7 @@ const AddressesScreen = ({ onBack, onAddNew, onEdit }) => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backBtn} activeOpacity={0.7}>
-          <Text style={styles.backIcon}>‹</Text>
+          <Ionicons name="chevron-back" size={24} color={Colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Addresses</Text>
         <TouchableOpacity onPress={onAddNew} style={styles.addBtn} activeOpacity={0.8}>
@@ -146,7 +150,7 @@ const AddressesScreen = ({ onBack, onAddNew, onEdit }) => {
         </View>
       ) : addresses.length === 0 ? (
         <View style={styles.center}>
-          <Text style={styles.emptyIcon}>📍</Text>
+          <Ionicons name="location-outline" size={52} color={Colors.textMuted} style={{ marginBottom: Theme.spacing.md }} />
           <Text style={styles.emptyTitle}>No addresses yet</Text>
           <Text style={styles.emptySubtitle}>Add a delivery address to get started.</Text>
           <TouchableOpacity style={styles.addFirstBtn} onPress={onAddNew} activeOpacity={0.8}>
@@ -193,12 +197,6 @@ const styles = StyleSheet.create({
   backBtn: {
     padding: Theme.spacing.xs,
     marginRight: Theme.spacing.sm,
-  },
-  backIcon: {
-    fontSize: 28,
-    color: Colors.textPrimary,
-    lineHeight: 30,
-    fontWeight: '300',
   },
   headerTitle: {
     flex: 1,
@@ -248,9 +246,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
-  labelIcon: {
-    fontSize: 16,
-  },
   labelText: {
     fontSize: Theme.fontSize.md,
     fontWeight: '700',
@@ -284,10 +279,15 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     lineHeight: 20,
   },
+  phoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: Theme.spacing.xs,
+  },
   phone: {
     fontSize: Theme.fontSize.sm,
     color: Colors.textSecondary,
-    marginTop: Theme.spacing.xs,
   },
   cardActions: {
     flexDirection: 'row',
@@ -341,7 +341,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: Theme.fontSize.sm,
   },
-  emptyIcon: { fontSize: 48, marginBottom: Theme.spacing.md },
   emptyTitle: {
     fontSize: Theme.fontSize.lg,
     fontWeight: '700',

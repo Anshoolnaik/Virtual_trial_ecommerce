@@ -1,10 +1,13 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
 import Colors from '../../constants/colors';
 import Theme from '../../constants/theme';
 
-const Header = ({ cartCount = 2, notificationCount = 3, onNavigate }) => {
+const Header = ({ notificationCount = 3, onNavigate, onCartPress }) => {
   const { isAuthenticated, user } = useAuth();
+  const { cartCount } = useCart();
 
   return (
     <View style={styles.container}>
@@ -24,7 +27,7 @@ const Header = ({ cartCount = 2, notificationCount = 3, onNavigate }) => {
         {isAuthenticated ? (
           <>
             <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7}>
-              <Text style={styles.icon}>🔔</Text>
+              <Ionicons name="notifications-outline" size={20} color={Colors.textPrimary} />
               {notificationCount > 0 && (
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>{notificationCount}</Text>
@@ -32,8 +35,8 @@ const Header = ({ cartCount = 2, notificationCount = 3, onNavigate }) => {
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7}>
-              <Text style={styles.icon}>🛒</Text>
+            <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7} onPress={onCartPress}>
+              <Ionicons name="bag-outline" size={20} color={Colors.textPrimary} />
               {cartCount > 0 && (
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>{cartCount}</Text>
@@ -50,7 +53,7 @@ const Header = ({ cartCount = 2, notificationCount = 3, onNavigate }) => {
         ) : (
           <>
             <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7}>
-              <Text style={styles.icon}>🛒</Text>
+              <Ionicons name="bag-outline" size={20} color={Colors.textPrimary} />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -121,9 +124,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  icon: {
-    fontSize: 18,
   },
   badge: {
     position: 'absolute',

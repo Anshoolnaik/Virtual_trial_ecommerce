@@ -1,33 +1,44 @@
-import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import Colors from '../../constants/colors';
 import Theme from '../../constants/theme';
 
 const SearchBar = ({ onSearch }) => {
   const [query, setQuery] = useState('');
 
+  const handleChange = (text) => {
+    setQuery(text);
+    onSearch && onSearch(text);
+  };
+
+  const handleClear = () => {
+    setQuery('');
+    onSearch && onSearch('');
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.inputWrap}>
-        <Text style={styles.searchIcon}>🔍</Text>
+        <Ionicons name="search-outline" size={18} color={Colors.textMuted} style={styles.searchIcon} />
         <TextInput
           style={styles.input}
           placeholder="Search clothes, shoes, bags..."
           placeholderTextColor={Colors.textMuted}
           value={query}
-          onChangeText={setQuery}
+          onChangeText={handleChange}
           returnKeyType="search"
           onSubmitEditing={() => onSearch && onSearch(query)}
         />
         {query.length > 0 && (
-          <TouchableOpacity onPress={() => setQuery('')} style={styles.clearBtn}>
-            <Text style={styles.clearIcon}>✕</Text>
+          <TouchableOpacity onPress={handleClear} style={styles.clearBtn}>
+            <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
           </TouchableOpacity>
         )}
       </View>
 
       <TouchableOpacity style={styles.filterBtn} activeOpacity={0.8}>
-        <Text style={styles.filterIcon}>⚙</Text>
+        <Ionicons name="options-outline" size={20} color={Colors.white} />
       </TouchableOpacity>
     </View>
   );
@@ -54,7 +65,6 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   searchIcon: {
-    fontSize: 16,
     marginRight: Theme.spacing.sm,
   },
   input: {
@@ -66,11 +76,6 @@ const styles = StyleSheet.create({
   clearBtn: {
     padding: 4,
   },
-  clearIcon: {
-    fontSize: 12,
-    color: Colors.textMuted,
-    fontWeight: '600',
-  },
   filterBtn: {
     width: 46,
     height: 46,
@@ -79,10 +84,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...Theme.shadow.sm,
-  },
-  filterIcon: {
-    fontSize: 20,
-    color: Colors.white,
   },
 });
 

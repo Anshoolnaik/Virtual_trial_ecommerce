@@ -4,6 +4,9 @@ const cors = require('cors');
 
 const authRoutes = require('./src/routes/authRoutes');
 const addressRoutes = require('./src/routes/addressRoutes');
+const sellerAuthRoutes = require('./src/routes/sellerAuthRoutes');
+const sellerProductRoutes = require('./src/routes/sellerProductRoutes');
+const publicProductRoutes = require('./src/routes/publicProductRoutes');
 const errorHandler = require('./src/middleware/errorHandler');
 
 const app = express();
@@ -21,6 +24,9 @@ app.get('/health', (req, res) => {
 // ─── Routes ───────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/addresses', addressRoutes);
+app.use('/api/seller/auth', sellerAuthRoutes);
+app.use('/api/seller/products', sellerProductRoutes);
+app.use('/api/products', publicProductRoutes);
 
 // ─── 404 ──────────────────────────────────────────────────────────────────────
 app.use((req, res) => {
@@ -34,6 +40,9 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`\n🚀 Vogue API running on http://localhost:${PORT}`);
-  console.log(`   Health: http://localhost:${PORT}/health`);
-  console.log(`   Auth:   http://localhost:${PORT}/api/auth\n`);
+  console.log(`   Health:           http://localhost:${PORT}/health`);
+  console.log(`   Buyer Auth:       http://localhost:${PORT}/api/auth`);
+  console.log(`   Seller Auth:      http://localhost:${PORT}/api/seller/auth`);
+  console.log(`   Seller Products:  http://localhost:${PORT}/api/seller/products`);
+  console.log(`   Public Products:  http://localhost:${PORT}/api/products\n`);
 });

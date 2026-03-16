@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import Colors from '../../constants/colors';
 import Theme from '../../constants/theme';
 
@@ -40,7 +41,11 @@ const ProductCard = ({ product, style, onPress }) => {
           onPress={() => setWishlisted(!wishlisted)}
           activeOpacity={0.8}
         >
-          <Text style={styles.wishlistIcon}>{wishlisted ? '❤️' : '🤍'}</Text>
+          <Ionicons
+            name={wishlisted ? 'heart' : 'heart-outline'}
+            size={16}
+            color={wishlisted ? Colors.accent : Colors.textPrimary}
+          />
         </TouchableOpacity>
 
         {/* Virtual Try-On tag */}
@@ -135,9 +140,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...Theme.shadow.sm,
-  },
-  wishlistIcon: {
-    fontSize: 16,
   },
   tryOnTag: {
     position: 'absolute',

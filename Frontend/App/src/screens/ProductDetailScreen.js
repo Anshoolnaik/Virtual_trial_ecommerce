@@ -1,15 +1,22 @@
-import React, { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   View,
   Text,
   Image,
   ScrollView,
+  FlatList,
   TouchableOpacity,
   StyleSheet,
   StatusBar,
   Platform,
-  SafeAreaView,
+  Alert,
+  Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+import { useCart } from '../context/CartContext';
 import Colors from '../constants/colors';
 import Theme from '../constants/theme';
 
@@ -35,9 +42,39 @@ const getDescription = (name = '', brand = '') =>
 
 // ─── Product Detail Screen ────────────────────────────────────────────────────
 const ProductDetailScreen = ({ product, onBack }) => {
-  const [selectedColor, setSelectedColor] = useState(product.colors[0]);
+  const [selectedColor, setSelectedColor] = useState(product.colors?.[0] ?? null);
   const [selectedSize, setSelectedSize] = useState(null);
   const [wishlisted, setWishlisted] = useState(false);
+  const [addedToCart, setAddedToCart] = useState(false);
+  const [activeImgIdx, setActiveImgIdx] = useState(0);
+  const flatRef = useRef(null);
+  const { addToCart } = useCart();
+
+  // Build image list filtered by selected color.
+  // If no images are tagged for that color, show all images (graceful fallback).
+  const allImages = product.images?.length
+    ? product.images
+    : product.imageUrl
+    ? [{ url: product.imageUrl, color: null }]
+    : [];
+
+  const colorImages = selectedColor
+    ? allImages.filter((img) => img.color === selectedColor)
+    : [];
+
+  const images = colorImages.length > 0
+    ? colorImages.map((img) => img.url)
+    : allImages.map((img) => img.url);
+
+  const handleAddToCart = () => {
+    if (!selectedSize) {
+      Alert.alert('Select a size', 'Please choose a size before adding to cart.');
+      return;
+    }
+    addToCart(product, selectedSize, selectedColor);
+    setAddedToCart(true);
+    setTimeout(() => setAddedToCart(false), 2000);
+  };
 
   const sizes = getSizes(product.name);
   const badgeStyle = product.badge ? BADGE_CONFIG[product.badge] : null;
@@ -57,24 +94,46 @@ const ProductDetailScreen = ({ product, onBack }) => {
         showsVerticalScrollIndicator={false}
         bounces
       >
-        {/* ── Hero Image ── */}
+        {/* ── Hero Image Carousel ── */}
         <View style={styles.imageWrap}>
-          <Image
-            source={{ uri: product.imageUrl.replace(/w=\d+&h=\d+/, 'w=600&h=700') }}
-            style={styles.image}
-            resizeMode="cover"
+          <FlatList
+            ref={flatRef}
+            data={images}
+            keyExtractor={(_, i) => String(i)}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(e) => {
+              const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+              setActiveImgIdx(idx);
+            }}
+            renderItem={({ item }) => (
+              <Image
+                source={{ uri: item }}
+                style={styles.image}
+                resizeMode="cover"
+              />
+            )}
           />
 
-          {/* Gradient overlay at top for buttons */}
+          {/* Dot indicators — only when > 1 image */}
+          {images.length > 1 && (
+            <View style={styles.dotsRow}>
+              {images.map((_, i) => (
+                <View
+                  key={i}
+                  style={[styles.dot, i === activeImgIdx && styles.dotActive]}
+                />
+              ))}
+            </View>
+          )}
+
+          {/* Gradient overlay */}
           <View style={styles.imageOverlay} />
 
           {/* Back */}
-          <TouchableOpacity
-            style={styles.backBtn}
-            onPress={onBack}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.backIcon}>‹</Text>
+          <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.85}>
+            <Ionicons name="chevron-back" size={24} color={Colors.textPrimary} />
           </TouchableOpacity>
 
           {/* Wishlist */}
@@ -83,7 +142,11 @@ const ProductDetailScreen = ({ product, onBack }) => {
             onPress={() => setWishlisted(!wishlisted)}
             activeOpacity={0.85}
           >
-            <Text style={styles.wishIcon}>{wishlisted ? '❤️' : '🤍'}</Text>
+            <Ionicons
+              name={wishlisted ? 'heart' : 'heart-outline'}
+              size={18}
+              color={wishlisted ? Colors.accent : Colors.textPrimary}
+            />
           </TouchableOpacity>
 
           {/* Badge */}
@@ -98,7 +161,7 @@ const ProductDetailScreen = ({ product, onBack }) => {
           {/* Try-On tag */}
           {product.tryOn && (
             <View style={styles.tryOnTag}>
-              <Text style={styles.tryOnTagText}>✨ Virtual Try-On</Text>
+              <Text style={styles.tryOnTagText}>Virtual Try-On</Text>
             </View>
           )}
         </View>
@@ -156,7 +219,11 @@ const ProductDetailScreen = ({ product, onBack }) => {
                     c === '#FFFFFF' && styles.swatchWhite,
                     selectedColor === c && styles.swatchSelected,
                   ]}
-                  onPress={() => setSelectedColor(c)}
+                  onPress={() => {
+                    setSelectedColor(c);
+                    setActiveImgIdx(0);
+                    flatRef.current?.scrollToOffset({ offset: 0, animated: true });
+                  }}
                   activeOpacity={0.8}
                 />
               ))}
@@ -194,23 +261,32 @@ const ProductDetailScreen = ({ product, onBack }) => {
           {/* Description */}
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>Description</Text>
-            <Text style={styles.descText}>{getDescription(product.name, product.brand)}</Text>
+            <Text style={styles.descText}>
+              {product.description || getDescription(product.name, product.brand)}
+            </Text>
           </View>
 
           {/* Details */}
-          <View style={styles.detailsCard}>
-            {[
-              ['Material', 'Premium quality fabric blend'],
-              ['Fit', 'Regular fit, true to size'],
-              ['Care', 'Machine wash cold, tumble dry low'],
-              ['Origin', 'Ethically made'],
-            ].map(([key, val]) => (
-              <View key={key} style={styles.detailRow}>
-                <Text style={styles.detailKey}>{key}</Text>
-                <Text style={styles.detailVal}>{val}</Text>
-              </View>
-            ))}
-          </View>
+          {[
+            ['Material', product.material],
+            ['Fit',      product.fit],
+            ['Care',     product.care],
+            ['Origin',   product.origin],
+          ].some(([, v]) => v) && (
+            <View style={styles.detailsCard}>
+              {[
+                ['Material', product.material],
+                ['Fit',      product.fit],
+                ['Care',     product.care],
+                ['Origin',   product.origin],
+              ].filter(([, v]) => v).map(([key, val]) => (
+                <View key={key} style={styles.detailRow}>
+                  <Text style={styles.detailKey}>{key}</Text>
+                  <Text style={styles.detailVal}>{val}</Text>
+                </View>
+              ))}
+            </View>
+          )}
 
           {/* Bottom padding for fixed CTA */}
           <View style={{ height: 100 }} />
@@ -221,14 +297,15 @@ const ProductDetailScreen = ({ product, onBack }) => {
       <View style={styles.ctaBar}>
         {product.tryOn && (
           <TouchableOpacity style={styles.tryOnBtn} activeOpacity={0.85}>
-            <Text style={styles.tryOnBtnText}>✨ Try On</Text>
+            <Text style={styles.tryOnBtnText}>Try On</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity
-          style={[styles.addToCartBtn, product.tryOn ? { flex: 2 } : { flex: 1 }]}
+          style={[styles.addToCartBtn, product.tryOn ? { flex: 2 } : { flex: 1 }, addedToCart && styles.addToCartBtnAdded]}
+          onPress={handleAddToCart}
           activeOpacity={0.85}
         >
-          <Text style={styles.addToCartText}>Add to Cart</Text>
+          <Text style={styles.addToCartText}>{addedToCart ? '✓ Added!' : 'Add to Cart'}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -251,11 +328,30 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.inputBg,
   },
   image: {
-    width: '100%',
-    height: '100%',
+    width: SCREEN_WIDTH,
+    height: 400,
+  },
+  dotsRow: {
+    position: 'absolute',
+    bottom: 52,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.45)',
+  },
+  dotActive: {
+    backgroundColor: Colors.white,
+    width: 18,
   },
   imageOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     background: 'transparent',
     // Subtle top gradient via a semi-transparent layer only at top
     height: 90,
@@ -273,13 +369,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...Theme.shadow.md,
   },
-  backIcon: {
-    fontSize: 26,
-    color: Colors.textPrimary,
-    lineHeight: 28,
-    fontWeight: '300',
-    marginTop: -2,
-  },
   wishBtn: {
     position: 'absolute',
     top: Platform.OS === 'android' ? 12 : 16,
@@ -291,9 +380,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...Theme.shadow.md,
-  },
-  wishIcon: {
-    fontSize: 18,
   },
   badge: {
     position: 'absolute',
@@ -562,6 +648,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...Theme.shadow.md,
+  },
+  addToCartBtnAdded: {
+    backgroundColor: Colors.success,
   },
   addToCartText: {
     color: Colors.white,

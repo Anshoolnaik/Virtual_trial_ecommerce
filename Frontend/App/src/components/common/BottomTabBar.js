@@ -1,14 +1,14 @@
-import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import Colors from '../../constants/colors';
 import Theme from '../../constants/theme';
 
 const tabs = [
-  { id: 'home', label: 'Home', icon: '🏠' },
-  { id: 'explore', label: 'Explore', icon: '🔍' },
-  { id: 'tryon', label: 'Try-On', icon: null, special: true },
-  { id: 'wishlist', label: 'Wishlist', icon: '🤍' },
-  { id: 'profile', label: 'Profile', icon: '👤' },
+  { id: 'home',     label: 'Home',     icon: 'home-outline',    iconActive: 'home' },
+  { id: 'explore',  label: 'Explore',  icon: 'search-outline',  iconActive: 'search' },
+  { id: 'tryon',    label: 'Try-On',   icon: null,              special: true },
+  { id: 'wishlist', label: 'Wishlist', icon: 'heart-outline',   iconActive: 'heart' },
+  { id: 'profile',  label: 'Profile',  icon: 'person-outline',  iconActive: 'person' },
 ];
 
 const BottomTabBar = ({ activeTab = 'home', onTabPress }) => {
@@ -26,7 +26,7 @@ const BottomTabBar = ({ activeTab = 'home', onTabPress }) => {
               onPress={() => onTabPress && onTabPress(tab.id)}
             >
               <View style={styles.specialBtn}>
-                <Text style={styles.specialIcon}>✨</Text>
+                <Ionicons name="shirt-outline" size={24} color={Colors.white} />
               </View>
               <Text style={styles.specialLabel}>{tab.label}</Text>
             </TouchableOpacity>
@@ -40,9 +40,11 @@ const BottomTabBar = ({ activeTab = 'home', onTabPress }) => {
             activeOpacity={0.7}
             onPress={() => onTabPress && onTabPress(tab.id)}
           >
-            <Text style={[styles.tabIcon, isActive && styles.tabIconActive]}>
-              {isActive && tab.id === 'wishlist' ? '❤️' : tab.icon}
-            </Text>
+            <Ionicons
+              name={isActive ? tab.iconActive : tab.icon}
+              size={22}
+              color={isActive ? Colors.primary : Colors.textMuted}
+            />
             <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
               {tab.label}
             </Text>
@@ -71,13 +73,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: Theme.spacing.xs,
     gap: 2,
-  },
-  tabIcon: {
-    fontSize: 22,
-    opacity: 0.45,
-  },
-  tabIconActive: {
-    opacity: 1,
   },
   tabLabel: {
     fontSize: Theme.fontSize.xs,
@@ -111,9 +106,6 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: Colors.white,
     ...Theme.shadow.lg,
-  },
-  specialIcon: {
-    fontSize: 22,
   },
   specialLabel: {
     fontSize: Theme.fontSize.xs,
