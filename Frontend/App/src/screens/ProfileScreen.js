@@ -41,7 +41,7 @@ const Section = ({ title, children }) => (
 );
 
 // ─── Profile Screen ───────────────────────────────────────────────────────────
-const ProfileScreen = ({ onNavigate, onOpenAddresses, onOpenWishlist }) => {
+const ProfileScreen = ({ onNavigate, onOpenAddresses, onOpenWishlist, onOpenOrders }) => {
   const { user, signOut } = useAuth();
 
   const name = user?.full_name || 'Guest User';
@@ -101,8 +101,7 @@ const ProfileScreen = ({ onNavigate, onOpenAddresses, onOpenWishlist }) => {
           icon={<Ionicons name="cube-outline" size={20} color={Colors.textSecondary} />}
           label="My Orders"
           sublabel="Track, return or buy again"
-          onPress={() => {}}
-          rightBadge={2}
+          onPress={onOpenOrders}
         />
         <View style={styles.divider} />
         <MenuItem

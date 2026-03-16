@@ -25,15 +25,27 @@ import AddressFormScreen from './AddressFormScreen';
 import ProductDetailScreen from './ProductDetailScreen';
 import CartScreen from './CartScreen';
 import WishlistScreen from './WishlistScreen';
+import CheckoutScreen from './CheckoutScreen';
+import OrdersScreen from './OrdersScreen';
 
 import Colors from '../constants/colors';
 import Theme from '../constants/theme';
 import { banners, categories, flashSaleProducts } from '../data/mockData';
 import { productAPI } from '../services/api';
 import { useWishlist } from '../context/WishlistContext';
+import { useAuth } from '../context/AuthContext';
+
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+};
 
 const HomeScreen = ({ onNavigate }) => {
   const { wishlistCount } = useWishlist();
+  const { user } = useAuth();
+  const firstName = user?.full_name?.split(' ')[0] || 'User';
   const [activeTab, setActiveTab] = useState('home');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -78,6 +90,10 @@ const HomeScreen = ({ onNavigate }) => {
       )
     );
   };
+  // Checkout / orders full-screen overlays
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [showOrders,   setShowOrders]   = useState(false);
+
   // Sub-screen stack for profile section: null | 'addresses' | 'address-form'
   const [subScreen, setSubScreen] = useState(null);
   const [editingAddress, setEditingAddress] = useState(null); // address being edited
@@ -93,7 +109,7 @@ const HomeScreen = ({ onNavigate }) => {
     setActiveTab(tab);
   };
 
-  // Product detail — full-screen, no header/tab bar
+  // Full-screen overlays (no header / tab bar)
   if (selectedProduct) {
     return (
       <ProductDetailScreen
@@ -102,6 +118,19 @@ const HomeScreen = ({ onNavigate }) => {
         onNavigate={onNavigate}
       />
     );
+  }
+
+  if (showCheckout) {
+    return (
+      <CheckoutScreen
+        onBack={() => setShowCheckout(false)}
+        onOrderPlaced={() => { setShowCheckout(false); setShowOrders(true); }}
+      />
+    );
+  }
+
+  if (showOrders) {
+    return <OrdersScreen onBack={() => setShowOrders(false)} />;
   }
 
   return (
@@ -115,7 +144,7 @@ const HomeScreen = ({ onNavigate }) => {
 
       {/* Scrollable Content */}
       {activeTab === 'cart' ? (
-        <CartScreen onBack={() => handleTabPress('home')} />
+        <CartScreen onBack={() => handleTabPress('home')} onCheckout={() => setShowCheckout(true)} />
       ) : activeTab === 'profile' && subScreen === 'addresses' ? (
         <AddressesScreen
           onBack={closeSubScreen}
@@ -131,7 +160,7 @@ const HomeScreen = ({ onNavigate }) => {
       ) : activeTab === 'wishlist' ? (
         <WishlistScreen onProductPress={setSelectedProduct} onBack={() => handleTabPress('home')} />
       ) : activeTab === 'profile' ? (
-        <ProfileScreen onNavigate={onNavigate} onOpenAddresses={openAddresses} onOpenWishlist={() => handleTabPress('wishlist')} />
+        <ProfileScreen onNavigate={onNavigate} onOpenAddresses={openAddresses} onOpenWishlist={() => handleTabPress('wishlist')} onOpenOrders={() => setShowOrders(true)} />
       ) : (
         <ScrollView
           style={styles.scroll}
@@ -167,7 +196,7 @@ const HomeScreen = ({ onNavigate }) => {
             <>
               {/* Greeting */}
               <View style={styles.greeting}>
-                <Text style={styles.greetingText}>Good morning, Alex 👋</Text>
+                <Text style={styles.greetingText}>{getGreeting()}, {firstName} 👋</Text>
                 <Text style={styles.greetingSubtext}>What are you looking for today?</Text>
               </View>
 

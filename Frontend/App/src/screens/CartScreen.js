@@ -14,7 +14,7 @@ import { useCart } from '../context/CartContext';
 import Colors from '../constants/colors';
 import Theme from '../constants/theme';
 
-const CartScreen = ({ onBack }) => {
+const CartScreen = ({ onBack, onCheckout }) => {
   const { cartItems, removeFromCart, updateQuantity, cartCount } = useCart();
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -91,7 +91,7 @@ const CartScreen = ({ onBack }) => {
 
           {/* Checkout CTA */}
           <View style={styles.ctaBar}>
-            <TouchableOpacity style={styles.checkoutBtn} activeOpacity={0.85}>
+            <TouchableOpacity style={styles.checkoutBtn} activeOpacity={0.85} onPress={onCheckout}>
               <Text style={styles.checkoutText}>Proceed to Checkout  →</Text>
             </TouchableOpacity>
           </View>

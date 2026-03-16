@@ -8,6 +8,8 @@ const sellerAuthRoutes = require('./src/routes/sellerAuthRoutes');
 const sellerProductRoutes = require('./src/routes/sellerProductRoutes');
 const publicProductRoutes = require('./src/routes/publicProductRoutes');
 const wishlistRoutes = require('./src/routes/wishlistRoutes');
+const orderRoutes = require('./src/routes/orderRoutes');
+const sellerOrderRoutes = require('./src/routes/sellerOrderRoutes');
 const errorHandler = require('./src/middleware/errorHandler');
 
 const app = express();
@@ -29,6 +31,8 @@ app.use('/api/seller/auth', sellerAuthRoutes);
 app.use('/api/seller/products', sellerProductRoutes);
 app.use('/api/products', publicProductRoutes);
 app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/seller/orders', sellerOrderRoutes);
 
 // ─── 404 ──────────────────────────────────────────────────────────────────────
 app.use((req, res) => {

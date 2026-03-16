@@ -77,6 +77,21 @@ export const wishlistAPI = {
     request(`/wishlist/${productId}`, { method: 'DELETE', headers: authHeader(token) }),
 };
 
+export const orderAPI = {
+  create: (token, body) =>
+    request('/orders', {
+      method: 'POST',
+      headers: authHeader(token),
+      body: JSON.stringify(body),
+    }),
+
+  getAll: (token) =>
+    request('/orders', { headers: authHeader(token) }),
+
+  get: (token, id) =>
+    request(`/orders/${id}`, { headers: authHeader(token) }),
+};
+
 export const addressAPI = {
   getAll: (token) =>
     request('/addresses', { headers: authHeader(token) }),

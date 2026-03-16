@@ -168,6 +168,52 @@ const migrate = async () => {
       CREATE INDEX IF NOT EXISTS idx_wishlists_user ON wishlists(user_id);
     `);
 
+    // ── Orders ────────────────────────────────────────────────────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS orders (
+        id               UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id          UUID         NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        address_snapshot JSONB        NOT NULL,
+        total_amount     DECIMAL(10,2) NOT NULL,
+        payment_method   VARCHAR(50)  NOT NULL DEFAULT 'cod',
+        status           VARCHAR(50)  NOT NULL DEFAULT 'pending',
+        created_at       TIMESTAMPTZ  DEFAULT NOW(),
+        updated_at       TIMESTAMPTZ  DEFAULT NOW()
+      );
+    `);
+
+    await client.query(`
+      DROP TRIGGER IF EXISTS orders_updated_at ON orders;
+      CREATE TRIGGER orders_updated_at
+        BEFORE UPDATE ON orders
+        FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+    `);
+
+    // ── Order Items ───────────────────────────────────────────────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS order_items (
+        id                UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
+        order_id          UUID         NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+        product_id        UUID         REFERENCES products(id) ON DELETE SET NULL,
+        seller_id         UUID         NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+        product_name      VARCHAR(255) NOT NULL,
+        product_brand     VARCHAR(255) NOT NULL,
+        product_image_url TEXT,
+        size              VARCHAR(50),
+        color             VARCHAR(50),
+        quantity          INTEGER      NOT NULL DEFAULT 1,
+        unit_price        DECIMAL(10,2) NOT NULL,
+        created_at        TIMESTAMPTZ  DEFAULT NOW()
+      );
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_orders_user     ON orders(user_id);
+      CREATE INDEX IF NOT EXISTS idx_orders_status   ON orders(status);
+      CREATE INDEX IF NOT EXISTS idx_order_items_order  ON order_items(order_id);
+      CREATE INDEX IF NOT EXISTS idx_order_items_seller ON order_items(seller_id);
+    `);
+
     console.log('✅ Migrations completed successfully.');
   } catch (err) {
     console.error('❌ Migration failed:', err.message);

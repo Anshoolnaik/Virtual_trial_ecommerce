@@ -21,6 +21,10 @@ export const sellerAuth = {
 };
 
 export const sellerApi = {
+  orders: {
+    list:         ()             => api.get('/api/seller/orders'),
+    updateStatus: (id, status)   => api.patch(`/api/seller/orders/${id}/status`, { status }),
+  },
   products: {
     list:   ()         => api.get('/api/seller/products'),
     get:    (id)       => api.get(`/api/seller/products/${id}`),
