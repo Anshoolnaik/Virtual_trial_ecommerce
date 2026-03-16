@@ -24,13 +24,16 @@ import AddressesScreen from './AddressesScreen';
 import AddressFormScreen from './AddressFormScreen';
 import ProductDetailScreen from './ProductDetailScreen';
 import CartScreen from './CartScreen';
+import WishlistScreen from './WishlistScreen';
 
 import Colors from '../constants/colors';
 import Theme from '../constants/theme';
 import { banners, categories, flashSaleProducts } from '../data/mockData';
 import { productAPI } from '../services/api';
+import { useWishlist } from '../context/WishlistContext';
 
 const HomeScreen = ({ onNavigate }) => {
+  const { wishlistCount } = useWishlist();
   const [activeTab, setActiveTab] = useState('home');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -96,6 +99,7 @@ const HomeScreen = ({ onNavigate }) => {
       <ProductDetailScreen
         product={selectedProduct}
         onBack={() => setSelectedProduct(null)}
+        onNavigate={onNavigate}
       />
     );
   }
@@ -105,7 +109,7 @@ const HomeScreen = ({ onNavigate }) => {
       <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
 
       {/* Fixed Header */}
-      {activeTab !== 'cart' && (
+      {activeTab !== 'cart' && activeTab !== 'wishlist' && (
         <Header notificationCount={3} onNavigate={onNavigate} onCartPress={() => handleTabPress('cart')} />
       )}
 
@@ -124,8 +128,10 @@ const HomeScreen = ({ onNavigate }) => {
           onBack={goBackToAddresses}
           onSaved={goBackToAddresses}
         />
+      ) : activeTab === 'wishlist' ? (
+        <WishlistScreen onProductPress={setSelectedProduct} onBack={() => handleTabPress('home')} />
       ) : activeTab === 'profile' ? (
-        <ProfileScreen onNavigate={onNavigate} onOpenAddresses={openAddresses} />
+        <ProfileScreen onNavigate={onNavigate} onOpenAddresses={openAddresses} onOpenWishlist={() => handleTabPress('wishlist')} />
       ) : (
         <ScrollView
           style={styles.scroll}
@@ -144,7 +150,7 @@ const HomeScreen = ({ onNavigate }) => {
                   : `No results for "${searchQuery}"`}
               </Text>
               {searchResults.length > 0 ? (
-                <ProductGrid products={searchResults} onProductPress={setSelectedProduct} />
+                <ProductGrid products={searchResults} onProductPress={setSelectedProduct} onNavigate={onNavigate} />
               ) : (
                 <View style={styles.noResults}>
                   <Text style={styles.noResultsIcon}>🔍</Text>
@@ -180,7 +186,7 @@ const HomeScreen = ({ onNavigate }) => {
               {apiLoading ? (
                 <ActivityIndicator style={styles.loader} color={Colors.primary} />
               ) : newArrivals.length > 0 ? (
-                <ProductGrid products={newArrivals} onProductPress={setSelectedProduct} />
+                <ProductGrid products={newArrivals} onProductPress={setSelectedProduct} onNavigate={onNavigate} />
               ) : null}
 
               {/* Flash Sale */}
@@ -202,7 +208,7 @@ const HomeScreen = ({ onNavigate }) => {
                 <FlatList
                   data={trending}
                   renderItem={({ item }) => (
-                    <ProductCard product={item} style={styles.trendingCard} onPress={() => setSelectedProduct(item)} />
+                    <ProductCard product={item} style={styles.trendingCard} onPress={() => setSelectedProduct(item)} onNavigate={onNavigate} />
                   )}
                   keyExtractor={(item) => item.id}
                   horizontal
@@ -223,14 +229,14 @@ const HomeScreen = ({ onNavigate }) => {
 
       {/* Fixed Bottom Tab Bar */}
       {activeTab !== 'cart' && (
-        <BottomTabBar activeTab={activeTab} onTabPress={handleTabPress} />
+        <BottomTabBar activeTab={activeTab} onTabPress={handleTabPress} wishlistCount={wishlistCount} />
       )}
     </SafeAreaView>
   );
 };
 
 // ─── Product Grid (2 columns) ────────────────────────────────────────────────
-const ProductGrid = ({ products, onProductPress }) => {
+const ProductGrid = ({ products, onProductPress, onNavigate }) => {
   const rows = [];
   for (let i = 0; i < products.length; i += 2) {
     rows.push(products.slice(i, i + 2));
@@ -245,6 +251,7 @@ const ProductGrid = ({ products, onProductPress }) => {
               product={product}
               style={styles.gridCard}
               onPress={() => onProductPress(product)}
+              onNavigate={onNavigate}
             />
           ))}
           {row.length === 1 && <View style={styles.gridCard} />}

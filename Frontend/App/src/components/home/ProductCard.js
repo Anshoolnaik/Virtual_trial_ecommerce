@@ -1,8 +1,9 @@
-import { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Colors from '../../constants/colors';
 import Theme from '../../constants/theme';
+import { useWishlist } from '../../context/WishlistContext';
+import { useAuth } from '../../context/AuthContext';
 
 const BADGE_CONFIG = {
   NEW: { bg: Colors.newBg, text: Colors.new },
@@ -12,8 +13,10 @@ const BADGE_CONFIG = {
   'BEST SELLER': { bg: Colors.hotBg, text: Colors.hot },
 };
 
-const ProductCard = ({ product, style, onPress }) => {
-  const [wishlisted, setWishlisted] = useState(false);
+const ProductCard = ({ product, style, onPress, onNavigate }) => {
+  const { isWishlisted, toggleWishlist } = useWishlist();
+  const { token } = useAuth();
+  const wishlisted = isWishlisted(product.id);
   const badgeStyle = product.badge ? BADGE_CONFIG[product.badge] : null;
 
   return (
@@ -38,7 +41,10 @@ const ProductCard = ({ product, style, onPress }) => {
         {/* Wishlist */}
         <TouchableOpacity
           style={styles.wishlistBtn}
-          onPress={() => setWishlisted(!wishlisted)}
+          onPress={() => {
+              if (!token) { onNavigate?.('login'); return; }
+              toggleWishlist(product);
+            }}
           activeOpacity={0.8}
         >
           <Ionicons

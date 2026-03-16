@@ -63,6 +63,20 @@ export const productAPI = {
   get: (id) => request(`/products/${id}`),
 };
 
+export const wishlistAPI = {
+  getAll: (token) =>
+    request('/wishlist', { headers: authHeader(token) }),
+
+  getIds: (token) =>
+    request('/wishlist/ids', { headers: authHeader(token) }),
+
+  add: (token, productId) =>
+    request(`/wishlist/${productId}`, { method: 'POST', headers: authHeader(token) }),
+
+  remove: (token, productId) =>
+    request(`/wishlist/${productId}`, { method: 'DELETE', headers: authHeader(token) }),
+};
+
 export const addressAPI = {
   getAll: (token) =>
     request('/addresses', { headers: authHeader(token) }),

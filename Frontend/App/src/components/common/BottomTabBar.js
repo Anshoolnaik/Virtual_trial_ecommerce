@@ -11,7 +11,7 @@ const tabs = [
   { id: 'profile',  label: 'Profile',  icon: 'person-outline',  iconActive: 'person' },
 ];
 
-const BottomTabBar = ({ activeTab = 'home', onTabPress }) => {
+const BottomTabBar = ({ activeTab = 'home', onTabPress, wishlistCount = 0 }) => {
   return (
     <View style={styles.container}>
       {tabs.map((tab) => {
@@ -33,6 +33,8 @@ const BottomTabBar = ({ activeTab = 'home', onTabPress }) => {
           );
         }
 
+        const badge = tab.id === 'wishlist' && wishlistCount > 0 ? wishlistCount : null;
+
         return (
           <TouchableOpacity
             key={tab.id}
@@ -40,11 +42,18 @@ const BottomTabBar = ({ activeTab = 'home', onTabPress }) => {
             activeOpacity={0.7}
             onPress={() => onTabPress && onTabPress(tab.id)}
           >
-            <Ionicons
-              name={isActive ? tab.iconActive : tab.icon}
-              size={22}
-              color={isActive ? Colors.primary : Colors.textMuted}
-            />
+            <View style={styles.iconWrap}>
+              <Ionicons
+                name={isActive ? tab.iconActive : tab.icon}
+                size={22}
+                color={isActive ? Colors.primary : Colors.textMuted}
+              />
+              {badge != null && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{badge > 99 ? '99+' : badge}</Text>
+                </View>
+              )}
+            </View>
             <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
               {tab.label}
             </Text>
@@ -73,6 +82,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: Theme.spacing.xs,
     gap: 2,
+  },
+  iconWrap: {
+    position: 'relative',
+  },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: -8,
+    backgroundColor: Colors.accent,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  badgeText: {
+    color: Colors.white,
+    fontSize: 9,
+    fontWeight: '800',
   },
   tabLabel: {
     fontSize: Theme.fontSize.xs,

@@ -17,6 +17,8 @@ import { Ionicons } from '@expo/vector-icons';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
+import { useAuth } from '../context/AuthContext';
 import Colors from '../constants/colors';
 import Theme from '../constants/theme';
 
@@ -41,14 +43,16 @@ const getDescription = (name = '', brand = '') =>
   `Whether dressed up or down, this piece is a wardrobe essential that speaks for itself.`;
 
 // ─── Product Detail Screen ────────────────────────────────────────────────────
-const ProductDetailScreen = ({ product, onBack }) => {
+const ProductDetailScreen = ({ product, onBack, onNavigate }) => {
   const [selectedColor, setSelectedColor] = useState(product.colors?.[0] ?? null);
   const [selectedSize, setSelectedSize] = useState(null);
-  const [wishlisted, setWishlisted] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
   const [activeImgIdx, setActiveImgIdx] = useState(0);
   const flatRef = useRef(null);
   const { addToCart } = useCart();
+  const { token } = useAuth();
+  const { isWishlisted, toggleWishlist } = useWishlist();
+  const wishlisted = isWishlisted(product.id);
 
   // Build image list filtered by selected color.
   // If no images are tagged for that color, show all images (graceful fallback).
@@ -139,7 +143,10 @@ const ProductDetailScreen = ({ product, onBack }) => {
           {/* Wishlist */}
           <TouchableOpacity
             style={styles.wishBtn}
-            onPress={() => setWishlisted(!wishlisted)}
+            onPress={() => {
+              if (!token) { onNavigate?.('login'); return; }
+              toggleWishlist(product);
+            }}
             activeOpacity={0.85}
           >
             <Ionicons

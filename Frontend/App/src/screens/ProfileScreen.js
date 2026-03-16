@@ -41,7 +41,7 @@ const Section = ({ title, children }) => (
 );
 
 // ─── Profile Screen ───────────────────────────────────────────────────────────
-const ProfileScreen = ({ onNavigate, onOpenAddresses }) => {
+const ProfileScreen = ({ onNavigate, onOpenAddresses, onOpenWishlist }) => {
   const { user, signOut } = useAuth();
 
   const name = user?.full_name || 'Guest User';
@@ -109,7 +109,7 @@ const ProfileScreen = ({ onNavigate, onOpenAddresses }) => {
           icon={<Ionicons name="heart-outline" size={20} color={Colors.textSecondary} />}
           label="Wishlist"
           sublabel="Items you've saved"
-          onPress={() => {}}
+          onPress={onOpenWishlist}
         />
         <View style={styles.divider} />
         <MenuItem
