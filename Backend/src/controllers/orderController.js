@@ -1,6 +1,8 @@
 const { pool } = require('../config/database');
-const Address = require('../models/Address');
-const Order   = require('../models/Order');
+const Address      = require('../models/Address');
+const Order        = require('../models/Order');
+const Notification = require('../models/Notification');
+const { emitToUser } = require('../socket');
 
 const VALID_STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
 
@@ -22,10 +24,10 @@ const createOrder = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Address not found.' });
     }
 
-    // 2. Fetch product details from DB (prices + seller_id)
+    // 2. Fetch product details from DB (prices + seller_id + stock)
     const productIds = items.map((i) => i.productId);
     const { rows: products } = await pool.query(
-      `SELECT p.id, p.name, p.brand, p.price, p.seller_id,
+      `SELECT p.id, p.name, p.brand, p.price, p.seller_id, p.stock,
               (SELECT url FROM product_images
                WHERE product_id = p.id AND is_primary = TRUE
                LIMIT 1) AS image_url
@@ -40,7 +42,20 @@ const createOrder = async (req, res, next) => {
 
     const productMap = Object.fromEntries(products.map((p) => [p.id, p]));
 
-    // 3. Build order items with server-side price snapshots
+    // 3. Validate stock availability
+    for (const item of items) {
+      const product = productMap[item.productId];
+      if (product.stock < item.quantity) {
+        return res.status(400).json({
+          success: false,
+          message: product.stock === 0
+            ? `"${product.name}" is out of stock.`
+            : `Only ${product.stock} left in stock for "${product.name}".`,
+        });
+      }
+    }
+
+    // 4. Build order items with server-side price snapshots
     const orderItems = items.map((item) => {
       const product = productMap[item.productId];
       return {
@@ -56,12 +71,12 @@ const createOrder = async (req, res, next) => {
       };
     });
 
-    // 4. Calculate total (shipping free over ₹100 equivalent threshold kept at $100)
+    // 5. Calculate total (shipping free over ₹100 equivalent threshold kept at $100)
     const subtotal  = orderItems.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
     const shipping  = subtotal >= 100 ? 0 : 9.99;
     const totalAmount = +(subtotal + shipping).toFixed(2);
 
-    // 5. Address snapshot
+    // 6. Address snapshot
     const addressSnapshot = {
       fullName:     address.full_name,
       phone:        address.phone,
@@ -73,13 +88,24 @@ const createOrder = async (req, res, next) => {
       country:      address.country,
     };
 
-    // 6. Create order
+    // 7. Create order + deduct stock atomically
     const order = await Order.create(req.user.id, {
       addressSnapshot,
       totalAmount,
       paymentMethod: 'cod',
       items: orderItems,
     });
+
+    // Notify buyer that the order was placed
+    Notification.create({
+      userId: req.user.id,
+      type:   'order_placed',
+      title:  'Order Placed!',
+      body:   `Your order of ${orderItems.length} item${orderItems.length !== 1 ? 's' : ''} has been placed. Total: ₹${totalAmount}.`,
+      data:   { orderId: order.id },
+    }).then((notification) => {
+      emitToUser(req.user.id, notification);
+    }).catch(() => {});
 
     res.status(201).json({ success: true, data: order });
   } catch (err) {

@@ -34,6 +34,14 @@ class Order {
         );
       }
 
+      // Deduct stock for each item inside the same transaction
+      for (const item of items) {
+        await client.query(
+          'UPDATE products SET stock = stock - $1 WHERE id = $2',
+          [item.quantity, item.productId]
+        );
+      }
+
       await client.query('COMMIT');
       return order;
     } catch (err) {

@@ -13,11 +13,17 @@ const BADGE_CONFIG = {
   'BEST SELLER': { bg: Colors.hotBg, text: Colors.hot },
 };
 
-const ProductCard = ({ product, style, onPress, onNavigate }) => {
+const ProductCard = ({ product, style, onPress, onNavigate, flashSalePrice }) => {
   const { isWishlisted, toggleWishlist } = useWishlist();
   const { token } = useAuth();
   const wishlisted = isWishlisted(product.id);
   const badgeStyle = product.badge ? BADGE_CONFIG[product.badge] : null;
+
+  const displayPrice    = flashSalePrice ?? product.price;
+  const strikePrice     = flashSalePrice ? product.price : product.originalPrice;
+  const discountToShow  = flashSalePrice
+    ? Math.round(((product.price - flashSalePrice) / product.price) * 100)
+    : product.discount;
 
   return (
     <TouchableOpacity style={[styles.card, style]} activeOpacity={0.9} onPress={onPress}>
@@ -57,7 +63,14 @@ const ProductCard = ({ product, style, onPress, onNavigate }) => {
         {/* Virtual Try-On tag */}
         {product.tryOn && (
           <View style={styles.tryOnTag}>
-            <Text style={styles.tryOnText}>✨ Try On</Text>
+            <Text style={styles.tryOnText}>Try On</Text>
+          </View>
+        )}
+
+        {/* Flash Sale tag */}
+        {flashSalePrice && (
+          <View style={styles.flashTag}>
+            <Text style={styles.flashTagText}>Flash Sale</Text>
           </View>
         )}
       </View>
@@ -76,7 +89,7 @@ const ProductCard = ({ product, style, onPress, onNavigate }) => {
 
         {/* Color swatches */}
         <View style={styles.colorsRow}>
-          {product.colors.map((c, i) => (
+          {(product.colors || []).map((c, i) => (
             <View
               key={i}
               style={[
@@ -91,16 +104,25 @@ const ProductCard = ({ product, style, onPress, onNavigate }) => {
 
         {/* Price */}
         <View style={styles.priceRow}>
-          <Text style={styles.price}>${product.price.toFixed(2)}</Text>
-          {product.originalPrice && (
-            <Text style={styles.originalPrice}>${product.originalPrice.toFixed(2)}</Text>
+          <Text style={[styles.price, flashSalePrice && styles.flashPrice]}>
+            ${displayPrice.toFixed(2)}
+          </Text>
+          {strikePrice && (
+            <Text style={styles.originalPrice}>${strikePrice.toFixed(2)}</Text>
           )}
-          {product.discount && (
+          {discountToShow > 0 && (
             <View style={styles.discountTag}>
-              <Text style={styles.discountText}>-{product.discount}%</Text>
+              <Text style={styles.discountText}>-{discountToShow}%</Text>
             </View>
           )}
         </View>
+
+        {/* Stock status */}
+        {product.stock === 0 ? (
+          <Text style={styles.outOfStock}>Out of Stock</Text>
+        ) : product.stock <= 5 ? (
+          <Text style={styles.lowStock}>Only {product.stock} left</Text>
+        ) : null}
       </View>
     </TouchableOpacity>
   );
@@ -160,6 +182,24 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: Colors.white,
     fontWeight: '600',
+  },
+  flashTag: {
+    position: 'absolute',
+    bottom: Theme.spacing.sm,
+    right: Theme.spacing.sm,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: Theme.spacing.sm,
+    paddingVertical: 3,
+    borderRadius: Theme.radius.full,
+  },
+  flashTagText: {
+    fontSize: 9,
+    color: Colors.white,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  flashPrice: {
+    color: Colors.accent,
   },
   info: {
     padding: Theme.spacing.md,
@@ -240,6 +280,18 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     color: Colors.sale,
+  },
+  lowStock: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#F59E0B',
+    marginTop: 2,
+  },
+  outOfStock: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#EF4444',
+    marginTop: 2,
   },
 });
 

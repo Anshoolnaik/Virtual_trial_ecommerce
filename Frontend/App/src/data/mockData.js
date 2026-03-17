@@ -32,13 +32,13 @@ export const banners = [
 ];
 
 export const categories = [
-  { id: '0', label: 'All', icon: '✦' },
-  { id: '1', label: 'Clothes', icon: '👕' },
-  { id: '2', label: 'Shoes', icon: '👟' },
-  { id: '3', label: 'Bags', icon: '👜' },
-  { id: '4', label: 'Accessories', icon: '⌚' },
-  { id: '5', label: 'Beauty', icon: '💄' },
-  { id: '6', label: 'Sports', icon: '🏃' },
+  { id: '0', label: 'All' },
+  { id: '1', label: 'Clothes' },
+  { id: '2', label: 'Shoes' },
+  { id: '3', label: 'Bags' },
+  { id: '4', label: 'Accessories' },
+  { id: '5', label: 'Beauty' },
+  { id: '6', label: 'Sports' },
 ];
 
 export const newArrivals = [

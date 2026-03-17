@@ -2,12 +2,14 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
+import { useNotifications } from '../../context/NotificationContext';
 import Colors from '../../constants/colors';
 import Theme from '../../constants/theme';
 
-const Header = ({ notificationCount = 3, onNavigate, onCartPress }) => {
+const Header = ({ onNavigate, onCartPress, onNotificationsPress }) => {
   const { isAuthenticated, user } = useAuth();
   const { cartCount } = useCart();
+  const { unreadCount } = useNotifications();
 
   return (
     <View style={styles.container}>
@@ -26,11 +28,11 @@ const Header = ({ notificationCount = 3, onNavigate, onCartPress }) => {
       <View style={styles.actions}>
         {isAuthenticated ? (
           <>
-            <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7}>
+            <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7} onPress={onNotificationsPress}>
               <Ionicons name="notifications-outline" size={20} color={Colors.textPrimary} />
-              {notificationCount > 0 && (
+              {unreadCount > 0 && (
                 <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{notificationCount}</Text>
+                  <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
                 </View>
               )}
             </TouchableOpacity>

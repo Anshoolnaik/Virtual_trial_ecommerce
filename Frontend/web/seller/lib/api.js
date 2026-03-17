@@ -38,6 +38,18 @@ export const sellerApi = {
     deleteImage:(id, imageId)     => api.delete(`/api/seller/products/${id}/images/${imageId}`),
     setPrimary: (id, imageId)     => api.patch(`/api/seller/products/${id}/images/${imageId}/primary`),
   },
+  flashSales: {
+    list:   ()          => api.get('/api/seller/flash-sales'),
+    create: (data)      => api.post('/api/seller/flash-sales', data),
+    update: (id, data)  => api.put(`/api/seller/flash-sales/${id}`, data),
+    delete: (id)        => api.delete(`/api/seller/flash-sales/${id}`),
+  },
+};
+
+export const publicApi = {
+  flashSales: {
+    active: (limit = 20) => api.get(`/api/flash-sales?limit=${limit}`),
+  },
 };
 
 export default api;

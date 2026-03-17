@@ -214,6 +214,53 @@ const migrate = async () => {
       CREATE INDEX IF NOT EXISTS idx_order_items_seller ON order_items(seller_id);
     `);
 
+    // ── Flash Sales ───────────────────────────────────────────────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS flash_sales (
+        id          UUID          PRIMARY KEY DEFAULT uuid_generate_v4(),
+        seller_id   UUID          NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+        product_id  UUID          NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+        sale_price  DECIMAL(10,2) NOT NULL,
+        starts_at   TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+        ends_at     TIMESTAMPTZ   NOT NULL,
+        is_active   BOOLEAN       NOT NULL DEFAULT TRUE,
+        created_at  TIMESTAMPTZ   DEFAULT NOW(),
+        updated_at  TIMESTAMPTZ   DEFAULT NOW()
+      );
+    `);
+
+    await client.query(`
+      DROP TRIGGER IF EXISTS flash_sales_updated_at ON flash_sales;
+      CREATE TRIGGER flash_sales_updated_at
+        BEFORE UPDATE ON flash_sales
+        FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_flash_sales_seller  ON flash_sales(seller_id);
+      CREATE INDEX IF NOT EXISTS idx_flash_sales_product ON flash_sales(product_id);
+      CREATE INDEX IF NOT EXISTS idx_flash_sales_ends_at ON flash_sales(ends_at);
+    `);
+
+    // ── Notifications ─────────────────────────────────────────────────────────
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id         UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id    UUID         NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        type       VARCHAR(50)  NOT NULL,
+        title      VARCHAR(255) NOT NULL,
+        body       TEXT         NOT NULL,
+        data       JSONB        NOT NULL DEFAULT '{}',
+        is_read    BOOLEAN      NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMPTZ  DEFAULT NOW()
+      );
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_notifications_user    ON notifications(user_id);
+      CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(user_id, is_read);
+    `);
+
     console.log('✅ Migrations completed successfully.');
   } catch (err) {
     console.error('❌ Migration failed:', err.message);

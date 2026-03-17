@@ -26,7 +26,6 @@ const CategoryPills = ({ categories = [], onSelect }) => {
             onPress={() => handleSelect(cat.id)}
             activeOpacity={0.75}
           >
-            <Text style={styles.pillIcon}>{cat.icon}</Text>
             <Text style={[styles.pillLabel, isActive && styles.pillLabelActive]}>
               {cat.label}
             </Text>
@@ -58,9 +57,6 @@ const styles = StyleSheet.create({
   pillActive: {
     backgroundColor: Colors.primary,
     borderColor: Colors.primary,
-  },
-  pillIcon: {
-    fontSize: 14,
   },
   pillLabel: {
     fontSize: Theme.fontSize.sm,

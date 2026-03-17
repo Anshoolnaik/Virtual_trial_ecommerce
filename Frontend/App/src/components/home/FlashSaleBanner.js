@@ -3,8 +3,8 @@ import { View, Text, TouchableOpacity, Image, FlatList, StyleSheet } from 'react
 import Colors from '../../constants/colors';
 import Theme from '../../constants/theme';
 
-const FlashSaleItem = ({ item }) => (
-  <TouchableOpacity style={styles.item} activeOpacity={0.85}>
+const FlashSaleItem = ({ item, onPress }) => (
+  <TouchableOpacity style={styles.item} activeOpacity={0.85} onPress={() => onPress && onPress(item)}>
     <View style={styles.itemImageWrap}>
       <Image source={{ uri: item.imageUrl }} style={styles.itemImage} resizeMode="cover" />
     </View>
@@ -14,22 +14,29 @@ const FlashSaleItem = ({ item }) => (
   </TouchableOpacity>
 );
 
-const FlashSaleBanner = ({ products = [] }) => {
-  const [timeLeft, setTimeLeft] = useState({ h: 2, m: 14, s: 33 });
+const calcTimeLeft = (endTime) => {
+  const diff = Math.max(0, Math.floor((new Date(endTime) - Date.now()) / 1000));
+  return {
+    h: Math.floor(diff / 3600),
+    m: Math.floor((diff % 3600) / 60),
+    s: diff % 60,
+  };
+};
+
+const FlashSaleBanner = ({ products = [], endTime, onPress }) => {
+  const [timeLeft, setTimeLeft] = useState(() =>
+    endTime ? calcTimeLeft(endTime) : { h: 0, m: 0, s: 0 }
+  );
 
   useEffect(() => {
+    if (!endTime) return;
     const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        let { h, m, s } = prev;
-        s -= 1;
-        if (s < 0) { s = 59; m -= 1; }
-        if (m < 0) { m = 59; h -= 1; }
-        if (h < 0) { h = 0; m = 0; s = 0; clearInterval(timer); }
-        return { h, m, s };
-      });
+      const tl = calcTimeLeft(endTime);
+      setTimeLeft(tl);
+      if (tl.h === 0 && tl.m === 0 && tl.s === 0) clearInterval(timer);
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [endTime]);
 
   const pad = (n) => String(n).padStart(2, '0');
 
@@ -38,10 +45,9 @@ const FlashSaleBanner = ({ products = [] }) => {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Text style={styles.fireIcon}>⚡</Text>
           <View>
             <Text style={styles.title}>Flash Sale</Text>
-            <Text style={styles.subtitle}>Don't miss the deals</Text>
+            <Text style={styles.subtitle}>Limited time offers</Text>
           </View>
         </View>
         <View style={styles.timerWrap}>
@@ -56,7 +62,7 @@ const FlashSaleBanner = ({ products = [] }) => {
       {/* Products */}
       <FlatList
         data={products}
-        renderItem={({ item }) => <FlashSaleItem item={item} />}
+        renderItem={({ item }) => <FlashSaleItem item={item} onPress={onPress} />}
         keyExtractor={(item) => item.id}
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -93,9 +99,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Theme.spacing.sm,
-  },
-  fireIcon: {
-    fontSize: 28,
   },
   title: {
     fontSize: Theme.fontSize.xl,

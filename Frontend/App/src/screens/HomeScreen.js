@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -27,11 +27,13 @@ import CartScreen from './CartScreen';
 import WishlistScreen from './WishlistScreen';
 import CheckoutScreen from './CheckoutScreen';
 import OrdersScreen from './OrdersScreen';
+import ProductListScreen from './ProductListScreen';
+import NotificationScreen from './NotificationScreen';
 
 import Colors from '../constants/colors';
 import Theme from '../constants/theme';
-import { banners, categories, flashSaleProducts } from '../data/mockData';
-import { productAPI } from '../services/api';
+import { banners, categories } from '../data/mockData';
+import { productAPI, flashSaleAPI } from '../services/api';
 import { useWishlist } from '../context/WishlistContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -52,19 +54,46 @@ const HomeScreen = ({ onNavigate }) => {
   const [searchResults, setSearchResults] = useState([]);
 
   // API data
-  const [newArrivals, setNewArrivals] = useState([]);
-  const [trending, setTrending]       = useState([]);
-  const [apiLoading, setApiLoading]   = useState(true);
+  const [newArrivals,  setNewArrivals]  = useState([]);
+  const [trending,     setTrending]     = useState([]);
+  const [flashSales,   setFlashSales]   = useState([]);
+  const [apiLoading,   setApiLoading]   = useState(true);
+
+  // Category filter
+  const [selectedCategory, setSelectedCategory] = useState('All');
+
+  const filteredNewArrivals = selectedCategory === 'All'
+    ? newArrivals
+    : newArrivals.filter((p) => p.category === selectedCategory);
+
+  const filteredTrending = selectedCategory === 'All'
+    ? trending
+    : trending.filter((p) => p.category === selectedCategory);
+
+  // productId → salePrice for quick lookup
+  const flashSaleMap = useMemo(() =>
+    Object.fromEntries(flashSales.map((fs) => [fs.productId, fs.salePrice])),
+    [flashSales]
+  );
+
+  // Apply flash sale price to a product before opening detail screen
+  const withFlashSale = (product) => {
+    const salePrice = flashSaleMap[product.id];
+    if (!salePrice) return product;
+    return { ...product, price: salePrice, originalPrice: product.price };
+  };
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [naRes, trRes] = await Promise.all([
+        const [naRes, trRes, fsRes] = await Promise.all([
           productAPI.newArrivals(8),
           productAPI.trending(8),
+          flashSaleAPI.getActive(20),
         ]);
         setNewArrivals(naRes.data.products);
         setTrending(trRes.data.products);
+        setFlashSales(fsRes.data.flashSales);
       } catch {
         // silently fall back to empty lists; banners/categories are still static
       } finally {
@@ -74,25 +103,39 @@ const HomeScreen = ({ onNavigate }) => {
     load();
   }, []);
 
-  const handleSearch = (query) => {
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  const handleSearch = async (query) => {
     setSearchQuery(query);
     if (!query.trim()) {
       setSearchResults([]);
       return;
     }
-    const q = query.toLowerCase();
-    const all = [...newArrivals, ...trending];
-    setSearchResults(
-      all.filter(
-        (p) =>
-          p.name.toLowerCase().includes(q) ||
-          p.brand.toLowerCase().includes(q)
-      )
-    );
+    setSearchLoading(true);
+    try {
+      const res = await productAPI.list({ search: query.trim(), limit: 40 });
+      setSearchResults(res.data.products);
+    } catch {
+      const q = query.toLowerCase();
+      const all = [...newArrivals, ...trending];
+      setSearchResults(
+        all.filter(
+          (p) =>
+            p.name.toLowerCase().includes(q) ||
+            p.brand.toLowerCase().includes(q)
+        )
+      );
+    } finally {
+      setSearchLoading(false);
+    }
   };
-  // Checkout / orders full-screen overlays
-  const [showCheckout, setShowCheckout] = useState(false);
-  const [showOrders,   setShowOrders]   = useState(false);
+  // Product list screen: null | 'new-arrivals' | 'trending'
+  const [productListScreen, setProductListScreen] = useState(null);
+
+  // Checkout / orders / notifications full-screen overlays
+  const [showCheckout,       setShowCheckout]       = useState(false);
+  const [showOrders,         setShowOrders]         = useState(false);
+  const [showNotifications,  setShowNotifications]  = useState(false);
 
   // Sub-screen stack for profile section: null | 'addresses' | 'address-form'
   const [subScreen, setSubScreen] = useState(null);
@@ -120,6 +163,20 @@ const HomeScreen = ({ onNavigate }) => {
     );
   }
 
+  if (productListScreen) {
+    const isNewArrivals = productListScreen === 'new-arrivals';
+    return (
+      <ProductListScreen
+        title={isNewArrivals ? 'New Arrivals' : 'Trending Now'}
+        subtitle={isNewArrivals ? 'Fresh styles just landed' : 'What everyone is wearing'}
+        products={isNewArrivals ? newArrivals : trending}
+        flashSaleMap={flashSaleMap}
+        onProductPress={(p) => { setProductListScreen(null); setSelectedProduct(withFlashSale(p)); }}
+        onBack={() => setProductListScreen(null)}
+      />
+    );
+  }
+
   if (showCheckout) {
     return (
       <CheckoutScreen
@@ -133,13 +190,17 @@ const HomeScreen = ({ onNavigate }) => {
     return <OrdersScreen onBack={() => setShowOrders(false)} />;
   }
 
+  if (showNotifications) {
+    return <NotificationScreen onBack={() => setShowNotifications(false)} />;
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
 
       {/* Fixed Header */}
       {activeTab !== 'cart' && activeTab !== 'wishlist' && (
-        <Header notificationCount={3} onNavigate={onNavigate} onCartPress={() => handleTabPress('cart')} />
+        <Header onNavigate={onNavigate} onCartPress={() => handleTabPress('cart')} onNotificationsPress={() => setShowNotifications(true)} />
       )}
 
       {/* Scrollable Content */}
@@ -171,24 +232,28 @@ const HomeScreen = ({ onNavigate }) => {
           <SearchBar onSearch={handleSearch} />
 
           {/* Search Results */}
-          {searchQuery.trim().length > 0 ? (
+          {searchQuery.trim().length > 0 && (
             <View style={styles.searchResults}>
-              <Text style={styles.searchResultsTitle}>
-                {searchResults.length > 0
-                  ? `${searchResults.length} result${searchResults.length !== 1 ? 's' : ''} for "${searchQuery}"`
-                  : `No results for "${searchQuery}"`}
-              </Text>
-              {searchResults.length > 0 ? (
-                <ProductGrid products={searchResults} onProductPress={setSelectedProduct} onNavigate={onNavigate} />
+              {searchLoading ? (
+                <ActivityIndicator style={styles.loader} color={Colors.primary} />
               ) : (
-                <View style={styles.noResults}>
-                  <Text style={styles.noResultsIcon}>🔍</Text>
-                  <Text style={styles.noResultsText}>Try a different keyword</Text>
-                </View>
+                <>
+                  <Text style={styles.searchResultsTitle}>
+                    {searchResults.length > 0
+                      ? `${searchResults.length} result${searchResults.length !== 1 ? 's' : ''} for "${searchQuery}"`
+                      : `No results for "${searchQuery}"`}
+                  </Text>
+                  {searchResults.length > 0 ? (
+                    <ProductGrid products={searchResults} onProductPress={(p) => setSelectedProduct(withFlashSale(p))} onNavigate={onNavigate} flashSaleMap={flashSaleMap} />
+                  ) : (
+                    <View style={styles.noResults}>
+                      <Text style={styles.noResultsIcon}>🔍</Text>
+                      <Text style={styles.noResultsText}>Try a different keyword</Text>
+                    </View>
+                  )}
+                </>
               )}
             </View>
-          ) : (
-          <></>
           )}
 
           {/* Home Content — hidden while searching */}
@@ -204,40 +269,71 @@ const HomeScreen = ({ onNavigate }) => {
               <HeroBanner banners={banners} />
 
               {/* Categories */}
-              <CategoryPills categories={categories} />
+              <CategoryPills
+                categories={categories}
+                onSelect={(id) => {
+                  const cat = categories.find((c) => c.id === id);
+                  setSelectedCategory(cat ? cat.label : 'All');
+                }}
+              />
 
               {/* New Arrivals — 2-column grid */}
               <SectionHeader
                 title="New Arrivals"
                 subtitle="Fresh styles just landed"
-                onSeeAll={() => {}}
+                onSeeAll={() => setProductListScreen('new-arrivals')}
               />
               {apiLoading ? (
                 <ActivityIndicator style={styles.loader} color={Colors.primary} />
-              ) : newArrivals.length > 0 ? (
-                <ProductGrid products={newArrivals} onProductPress={setSelectedProduct} onNavigate={onNavigate} />
+              ) : filteredNewArrivals.length > 0 ? (
+                <ProductGrid products={filteredNewArrivals} onProductPress={(p) => setSelectedProduct(withFlashSale(p))} onNavigate={onNavigate} flashSaleMap={flashSaleMap} />
               ) : null}
 
               {/* Flash Sale */}
-              <SectionHeader
-                title="Flash Sale"
-                subtitle="Up to 60% off select items"
-              />
-              <FlashSaleBanner products={flashSaleProducts} />
+              {flashSales.length > 0 && (
+                <>
+                  <SectionHeader
+                    title="Flash Sale"
+                    subtitle="Up to 60% off select items"
+                  />
+                  <FlashSaleBanner
+                    products={flashSales.map((fs) => ({
+                      id:            fs.id,
+                      productId:     fs.productId,
+                      name:          fs.product?.name  || '',
+                      salePrice:     fs.salePrice,
+                      originalPrice: fs.product?.originalPrice || null,
+                      imageUrl:      fs.product?.imageUrl || null,
+                    }))}
+                    endTime={flashSales[0]?.endsAt}
+                    onPress={async (item) => {
+                      try {
+                        const res = await productAPI.get(item.productId);
+                        const p = res.data.product;
+                        setSelectedProduct({
+                          ...p,
+                          price:         item.salePrice,
+                          originalPrice: p.price,
+                        });
+                      } catch { /* ignore */ }
+                    }}
+                  />
+                </>
+              )}
 
               {/* Trending — horizontal scroll */}
               <SectionHeader
                 title="Trending Now"
                 subtitle="What everyone is wearing"
-                onSeeAll={() => {}}
+                onSeeAll={() => setProductListScreen('trending')}
               />
               {apiLoading ? (
                 <ActivityIndicator style={styles.loader} color={Colors.primary} />
               ) : (
                 <FlatList
-                  data={trending}
+                  data={filteredTrending}
                   renderItem={({ item }) => (
-                    <ProductCard product={item} style={styles.trendingCard} onPress={() => setSelectedProduct(item)} onNavigate={onNavigate} />
+                    <ProductCard product={item} style={styles.trendingCard} onPress={() => setSelectedProduct(withFlashSale(item))} onNavigate={onNavigate} flashSalePrice={flashSaleMap[item.id]} />
                   )}
                   keyExtractor={(item) => item.id}
                   horizontal
@@ -265,7 +361,7 @@ const HomeScreen = ({ onNavigate }) => {
 };
 
 // ─── Product Grid (2 columns) ────────────────────────────────────────────────
-const ProductGrid = ({ products, onProductPress, onNavigate }) => {
+const ProductGrid = ({ products, onProductPress, onNavigate, flashSaleMap = {} }) => {
   const rows = [];
   for (let i = 0; i < products.length; i += 2) {
     rows.push(products.slice(i, i + 2));
@@ -281,6 +377,7 @@ const ProductGrid = ({ products, onProductPress, onNavigate }) => {
               style={styles.gridCard}
               onPress={() => onProductPress(product)}
               onNavigate={onNavigate}
+              flashSalePrice={flashSaleMap[product.id]}
             />
           ))}
           {row.length === 1 && <View style={styles.gridCard} />}
@@ -387,7 +484,7 @@ const styles = StyleSheet.create({
     gap: Theme.spacing.md,
   },
   trendingCard: {
-    width: 160,
+    width: 185,
   },
 
   // Virtual Try-On CTA

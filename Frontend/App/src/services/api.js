@@ -92,6 +92,21 @@ export const orderAPI = {
     request(`/orders/${id}`, { headers: authHeader(token) }),
 };
 
+export const flashSaleAPI = {
+  getActive: (limit = 20) => request(`/flash-sales?limit=${limit}`),
+};
+
+export const notificationAPI = {
+  getAll: (token) =>
+    request('/notifications', { headers: authHeader(token) }),
+
+  markRead: (token, id) =>
+    request(`/notifications/${id}/read`, { method: 'PATCH', headers: authHeader(token) }),
+
+  markAllRead: (token) =>
+    request('/notifications/read-all', { method: 'PATCH', headers: authHeader(token) }),
+};
+
 export const addressAPI = {
   getAll: (token) =>
     request('/addresses', { headers: authHeader(token) }),
