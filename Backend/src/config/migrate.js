@@ -87,6 +87,22 @@ const migrate = async () => {
         FOR EACH ROW EXECUTE FUNCTION set_updated_at();
     `);
 
+    // Settings columns (safe to run on existing tables)
+    for (const col of [
+      'phone VARCHAR(20)',
+      'store_description TEXT',
+      'return_policy TEXT',
+      'shipping_info TEXT',
+      'bank_account VARCHAR(100)',
+      'upi_id VARCHAR(100)',
+      'notif_orders BOOLEAN DEFAULT TRUE',
+      'notif_low_stock BOOLEAN DEFAULT TRUE',
+      'notif_flash_sales BOOLEAN DEFAULT TRUE',
+    ]) {
+      const colName = col.split(' ')[0];
+      await client.query(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS ${col};`);
+    }
+
     // ── Products ─────────────────────────────────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS products (
