@@ -20,6 +20,14 @@ export const sellerAuth = {
   me:       ()     => api.get('/api/seller/auth/me'),
 };
 
+export const sellerSettings = {
+  updateProfile:       (data) => api.patch('/api/seller/auth/settings/profile', data),
+  changePassword:      (data) => api.patch('/api/seller/auth/settings/password', data),
+  updateNotifications: (data) => api.patch('/api/seller/auth/settings/notifications', data),
+  updatePayout:        (data) => api.patch('/api/seller/auth/settings/payout', data),
+  updatePolicies:      (data) => api.patch('/api/seller/auth/settings/policies', data),
+};
+
 export const sellerApi = {
   orders: {
     list:         ()             => api.get('/api/seller/orders'),

@@ -86,3 +86,117 @@ exports.login = async (req, res, next) => {
 exports.getMe = async (req, res) => {
   res.json({ success: true, data: { seller: req.seller } });
 };
+
+exports.updateProfile = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: errors.array()[0].msg,
+        errors: errors.array(),
+      });
+    }
+
+    const { fullName, storeName, email, phone, storeDescription } = req.body;
+
+    // Check email uniqueness if changing
+    if (email && email.toLowerCase().trim() !== req.seller.email) {
+      const existing = await Seller.findByEmail(email);
+      if (existing) {
+        return res.status(409).json({
+          success: false,
+          message: 'This email is already in use by another account.',
+        });
+      }
+    }
+
+    const updated = await Seller.update(req.seller.id, {
+      ...(fullName        && { full_name: fullName.trim() }),
+      ...(storeName       && { store_name: storeName.trim() }),
+      ...(email           && { email: email.toLowerCase().trim() }),
+      ...(phone  !== undefined && { phone: phone?.trim() || null }),
+      ...(storeDescription !== undefined && { store_description: storeDescription?.trim() || null }),
+    });
+
+    // Sync localStorage-friendly fields back
+    if (typeof window === 'undefined' && updated) {
+      // server context — nothing to sync
+    }
+
+    res.json({ success: true, message: 'Profile updated.', data: { seller: updated } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.changePassword = async (req, res, next) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: errors.array()[0].msg,
+        errors: errors.array(),
+      });
+    }
+
+    const { currentPassword, newPassword } = req.body;
+
+    try {
+      await Seller.changePassword(req.seller.id, currentPassword, newPassword);
+    } catch (err) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+
+    res.json({ success: true, message: 'Password changed successfully.' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.updateNotifications = async (req, res, next) => {
+  try {
+    const { notifOrders, notifLowStock, notifFlashSales } = req.body;
+
+    const updated = await Seller.update(req.seller.id, {
+      notif_orders:      notifOrders      ?? true,
+      notif_low_stock:   notifLowStock    ?? true,
+      notif_flash_sales: notifFlashSales  ?? true,
+    });
+
+    res.json({ success: true, message: 'Notification preferences saved.', data: { seller: updated } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.updatePayout = async (req, res, next) => {
+  try {
+    const { bankAccount, upiId } = req.body;
+
+    const updated = await Seller.update(req.seller.id, {
+      bank_account: bankAccount?.trim() || null,
+      upi_id:       upiId?.trim()       || null,
+    });
+
+    res.json({ success: true, message: 'Payout info saved.', data: { seller: updated } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.updatePolicies = async (req, res, next) => {
+  try {
+    const { returnPolicy, shippingInfo } = req.body;
+
+    const updated = await Seller.update(req.seller.id, {
+      return_policy: returnPolicy?.trim() || null,
+      shipping_info: shippingInfo?.trim() || null,
+    });
+
+    res.json({ success: true, message: 'Store policies saved.', data: { seller: updated } });
+  } catch (err) {
+    next(err);
+  }
+};
